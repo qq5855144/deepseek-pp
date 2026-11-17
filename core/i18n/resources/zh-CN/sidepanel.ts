@@ -771,6 +771,8 @@ export const sidepanel = {
     reasoningActive: '正在思考',
     read: '朗读',
     readLatest: '朗读最新助手回复',
+    copyMessage: '复制这条回复',
+    copied: '已复制',
     voiceInput: '语音输入',
     stopListening: '停止收听',
     mic: '麦克风',

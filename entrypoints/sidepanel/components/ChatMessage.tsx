@@ -2,6 +2,7 @@ import {
   Component,
   lazy,
   Suspense,
+  useState,
   type ErrorInfo,
   type ReactNode,
 } from 'react';
@@ -54,6 +55,16 @@ export default function ChatMessage({
 }: ChatMessageProps) {
   const { t } = useI18n();
   const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+  const copyMessageText = async () => {
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
+    } catch {
+      /* Clipboard may be unavailable (no permission / insecure context); fail silently instead of interrupting reading */
+    }
+  };
 
   return (
     <div className={`ds-chat-message-row ${isUser ? 'ds-chat-message-row-user' : 'ds-chat-message-row-assistant'}`}>
@@ -84,6 +95,7 @@ export default function ChatMessage({
                   <Suspense fallback={<PlainTextMessageContent text={message.text} />}>
                     <RichMessageContent
                       text={message.text}
+                      streaming={isStreaming}
                       onRendered={onRichContentRendered}
                     />
                   </Suspense>
@@ -94,6 +106,28 @@ export default function ChatMessage({
         )}
         {isStreaming && !isUser && (
           <span className="ds-chat-caret" />
+        )}
+        {!isUser && !isStreaming && (message.text || message.reasoningText) && (
+          <div className="ds-chat-message-actions">
+            <button
+              type="button"
+              className="ds-chat-message-action"
+              title={copied ? t('sidepanel.chatPage.copied') : t('sidepanel.chatPage.copyMessage')}
+              aria-label={t('sidepanel.chatPage.copyMessage')}
+              onClick={copyMessageText}
+            >
+              {copied ? (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden="true">
+                  <rect x="9" y="9" width="11" height="11" rx="2" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 15V6a2 2 0 012-2h9" />
+                </svg>
+              )}
+            </button>
+          </div>
         )}
       </div>
     </div>

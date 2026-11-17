@@ -771,6 +771,8 @@ export const sidepanel = {
     reasoningActive: 'Thinking',
     read: 'Read',
     readLatest: 'Read latest assistant response',
+    copyMessage: 'Copy this reply',
+    copied: 'Copied',
     voiceInput: 'Voice input',
     stopListening: 'Stop listening',
     mic: 'Mic',

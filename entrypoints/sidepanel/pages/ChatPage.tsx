@@ -137,9 +137,14 @@ export default function ChatPage() {
   }, [imageAttachments]);
   const canSendMessage = !isStreaming && !hasUploadingImageAttachment && !hasFailedImageAttachment && !!inputText.trim();
 
+  // Within 40px of the bottom counts as "at the bottom"; keep following while streaming grows
+  const stickyRef = useRef(true);
+  const scrollTopRef = useRef(0);
   const scrollMessagesToBottom = useCallback(() => {
     const messageList = listRef.current;
-    if (messageList) messageList.scrollTop = messageList.scrollHeight;
+    if (!messageList || !stickyRef.current) return;
+    messageList.scrollTop = messageList.scrollHeight;
+    scrollTopRef.current = messageList.scrollTop;
   }, []);
 
   function updateLastAssistant(update: (message: ChatMessageType) => ChatMessageType) {
@@ -283,6 +288,23 @@ export default function ChatPage() {
   useEffect(() => {
     scrollMessagesToBottom();
   }, [messages, scrollMessagesToBottom]);
+  // Only an explicit user scroll-up unfollows the bottom; layout growth (attachments, thinking expand, font load) does not
+  useEffect(() => {
+    const messageList = listRef.current;
+    if (!messageList) return;
+    const onScroll = () => {
+      const nearBottom =
+        messageList.scrollHeight - messageList.scrollTop - messageList.clientHeight < 40;
+      if (nearBottom) {
+        stickyRef.current = true;
+      } else if (messageList.scrollTop < scrollTopRef.current) {
+        stickyRef.current = false;
+      }
+      scrollTopRef.current = messageList.scrollTop;
+    };
+    messageList.addEventListener('scroll', onScroll, { passive: true });
+    return () => messageList.removeEventListener('scroll', onScroll);
+  }, []);
 
   const saveChatConfig = async (patch: Partial<OfficialApiChatConfig>) => {
     const next = normalizeOfficialApiChatConfig({ ...chatConfig, ...patch });
@@ -298,6 +320,8 @@ export default function ChatPage() {
     const text = inputText.trim();
     if (!text || !canSendMessage) return;
     const refFileIds = readyImageFileIds;
+    // Sending a message re-pins to the bottom even if the user had scrolled up
+    stickyRef.current = true;
     setAtTrigger({ active: false, query: '' });
 
     setMessages((prev) => {
